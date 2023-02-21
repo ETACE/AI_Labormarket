@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<parameters>
+					<parameter name="frequencyWriteDatabase" displayName="frequencyWriteDatabase" type="int" 
+						defaultValue="1000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="qDelta" displayName="qDelta" type="double" 
+						defaultValue="0.95" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="rewardNormalization" displayName="rewardNormalization" type="int" 
+						defaultValue="1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="fee" displayName="fee" type="double" 
+						defaultValue="0.0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="delta" displayName="delta" type="double" 
+						defaultValue="0.95" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="numFirms" displayName="numFirms" type="int" 
+						defaultValue="2" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="randomProductivity" displayName="randomProductivity" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="effort" displayName="effort" type="double" 
+						defaultValue="0.2" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="firmProductivity" displayName="firmProductivity" type="double" 
+						defaultValue="30.0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="shareFee" displayName="shareFee" type="double" 
+						defaultValue="0.5" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="learningStart" displayName="learningStart" type="int" 
+						defaultValue="1000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="iterationQMatrixReadIn" displayName="iterationQMatrixReadIn" type="int" 
+						defaultValue="800000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="numHiddenLayers" displayName="numHiddenLayers" type="int" 
+						defaultValue="2" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="optimizer" displayName="optimizer" type="java.lang.String" 
+						defaultValue="SGD" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$StringStringConverter"
+											/>
+				<parameter name="numIterationsBatchRuns" displayName="numIterationsBatchRuns" type="int" 
+						defaultValue="4000000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="alpha" displayName="alpha" type="double" 
+						defaultValue="1.0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="numWorkers" displayName="numWorkers" type="int" 
+						defaultValue="104" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="freqTrainingNetwork" displayName="freqTrainingNetwork" type="int" 
+						defaultValue="1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="freqUpdateTargetnet" displayName="freqUpdateTargetnet" type="int" 
+						defaultValue="10000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="simulationExperimentSetup" displayName="simulationExperimentSetup" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="beta" displayName="beta" type="double" 
+						defaultValue="4.0E-5" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="miniBatchSize" displayName="miniBatchSize" type="int" 
+						defaultValue="32" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="inputNormalization" displayName="inputNormalization" type="int" 
+						defaultValue="1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="dataBaseMode" displayName="dataBaseMode" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="switchDeepQLearning" displayName="switchDeepQLearning" type="int" 
+						defaultValue="1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="grainStrat" displayName="grainStrat" type="double" 
+						defaultValue="0.8" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="activationFunction" displayName="activationFunction" type="java.lang.String" 
+						defaultValue="logistic" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$StringStringConverter"
+											/>
+				<parameter name="epsilonInit" displayName="epsilonInit" type="double" 
+						defaultValue="0.8" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="modelType" displayName="modelType" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="learningRate" displayName="learningRate" type="double" 
+						defaultValue="0.01" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="randomSeed" displayName="Default Random Seed" type="int" 
+						defaultValue="__NULL__"
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="lowerLimitStrat" displayName="lowerLimitStrat" type="double" 
+						defaultValue="2.0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="memorySize" displayName="memorySize" type="int" 
+						defaultValue="100000" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+				<parameter name="weightRMSprop" displayName="weightRMSprop" type="double" 
+						defaultValue="0.1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="qAlpha" displayName="qAlpha" type="double" 
+						defaultValue="0.15" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+											/>
+				<parameter name="numStrat" displayName="numStrat" type="int" 
+						defaultValue="26" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+											
+				<parameter name="asymetricProductivities" displayName="asymetricProductivities" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+											/>
+											
+				<parameter name="deltaProductivity" displayName="deltaProductivity" type="double" 
+						defaultValue="0.0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$DoubleConverter"
+						/>
+		</parameters>
+
+

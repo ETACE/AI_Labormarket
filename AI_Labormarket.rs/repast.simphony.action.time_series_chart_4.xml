@@ -1,0 +1,37 @@
+<repast.simphony.chart2.engine.TimeSeriesChartDescriptor simphonyVersion="2.9.0">
+  <name>Time Series Greedy Wages</name>
+  <dataSet>A Data Set</dataSet>
+  <xAxisLabel>Tick Count</xAxisLabel>
+  <yAxisLabel></yAxisLabel>
+  <chartTitle>Greedy wages by firms</chartTitle>
+  <type>TIME_SERIES</type>
+  <background>
+    <red>192</red>
+    <green>192</green>
+    <blue>192</blue>
+    <alpha>255</alpha>
+  </background>
+  <gridLineColor>
+    <red>255</red>
+    <green>255</green>
+    <blue>255</blue>
+    <alpha>255</alpha>
+  </gridLineColor>
+  <showGrid>true</showGrid>
+  <showLegend>true</showLegend>
+  <seriesIds>
+    <entry>
+      <string>GreedyWageID</string>
+      <SeriesData>
+        <label></label>
+      </SeriesData>
+    </entry>
+  </seriesIds>
+  <dataValueIds>
+    <string>GreedyWageFirm0</string>
+    <string>GreedyWageFirm1</string>
+    <string>GreedyWageFirm2</string>
+    <string>GreedyWageFirm3</string>
+  </dataValueIds>
+  <plotRangeLength>-1</plotRangeLength>
+</repast.simphony.chart2.engine.TimeSeriesChartDescriptor>

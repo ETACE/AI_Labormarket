@@ -1,0 +1,27 @@
+<repast.simphony.data2.engine.FileSinkDescriptor simphonyVersion="2.9.0">
+  <name>Output file</name>
+  <dataSet>A Data Set</dataSet>
+  <delimiter>,</delimiter>
+  <format>TABULAR</format>
+  <sourceIds class="linked-hash-set">
+    <string>WageFirm0</string>
+    <string>WageFirm1</string>
+    <string>NumEmployed</string>
+    <string>AggProfits</string>
+    <string>tick</string>
+    <string>GreedyWageFirm0</string>
+    <string>GreedyWageFirm1</string>
+    <string>EmpFirm1</string>
+    <string>EmpFirm0</string>
+    <string>WageFirm2</string>
+    <string>WageFirm3</string>
+    <string>GreedyWageFirm2</string>
+    <string>GreedyWageFirm3</string>
+    <string>EmpFirm2</string>
+    <string>EmpFirm3</string>
+    <string>ProfitsFirm0</string>
+    <string>ProfitsFirm1</string>
+  </sourceIds>
+  <fileName>C:\Users\pharting\eclipse-workspace\onlineLaborQlearn\output\output</fileName>
+  <addTimeStamp>true</addTimeStamp>
+</repast.simphony.data2.engine.FileSinkDescriptor>

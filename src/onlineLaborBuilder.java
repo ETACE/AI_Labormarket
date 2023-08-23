@@ -26,11 +26,11 @@ import repast.simphony.util.ContextUtils;
 
 
 public class onlineLaborBuilder implements ContextBuilder<Object> {
-	
+
 
 	//Needed to set parameters in the Repast display
 
-	int numFirms;  //code is written for two firms only
+	int numFirms;  
 	int numWorkers ;
 	double firmProductivity; //production function A
 	double alpha ; //production function	exponent
@@ -50,15 +50,15 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 	double[] wageList; // List of wages firms can choose from
 	int learningStart; // Initial phase in which firms do only random wage setting and no learning takes place
 	int randomSeed;
-	int switchDeepQLearning; // Switch: 1 -> deep q learning with default parameters, otherwise adjusted parameters to run ordinary q learningf
-	int asymetricProductivities;
-	int databaseMode;
+	int switchDeepQLearning; // Switch: 1 -> deep q learning with default parameters, otherwise adjusted parameters to run ordinary q learning
+	int asymetricProductivities; // firms have different productivities
+	int databaseMode;  // Different saving options
 	String optimizer;
 	String activationFunction;
-	
+
 	int inputNormalization; 
 	int rewardNormalization; // Training frequency
-	
+
 	//Parameters Deep Q learning
 	int freqTrainingNetwork; // Training frequency
 	int miniBatchSize; //Size of mini batch drawn from experience memory
@@ -73,7 +73,7 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 	@Override
 	public Context build(Context<Object> context) {
 		context.setId("onlineLaborQlearn");
-		
+
 		int numPositions  = 104; // number of positions on Salop circle  - set it equal to number of workers
 		//further must define number of positions such that it gives an even number when divided by 2 and divided by 4, e.g. 104
 
@@ -83,13 +83,13 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 				"space", context, new RandomCartesianAdder<Object>(),
 				new repast.simphony.space.continuous.WrapAroundBorders(), numPositions,
 				1);
-		
+
 		//discretize the space
 		GridFactory gridFactory = GridFactoryFinder.createGridFactory(null);
 		Grid<Object> grid = gridFactory.createGrid("grid", context,
 				new GridBuilderParameters<Object>(new WrapAroundBorders(),
 						new SimpleGridAdder<Object>(), true, numPositions, 1));
-		
+
 		//Needed to set parameters in the Repast display
 		Parameters params = RunEnvironment.getInstance().getParameters();
 		numFirms = (Integer) params.getValue("numFirms"); //code is written for two firms only
@@ -125,241 +125,197 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 		activationFunction = (String) params.getValue("activationFunction");
 		deltaProductivity = (double) params.getValue("deltaProductivity");
 		asymetricProductivities = (int) params.getValue("asymetricProductivities");
-	
+
 		simulationExperimentSetup= (int) params.getValue("simulationExperimentSetup");  // This is used to define different experimental setups; if 0 -> no predefined setup is used. Setups are hardcoded and defined below
-		
+
 		databaseMode = 1;
 		//beta = 4e-6;
-		
-		
-		
+
+
+
 		factorNumNodesHiddenLayers = new double[2];
 		factorNumNodesHiddenLayers[0]= 2/3.0;
 		factorNumNodesHiddenLayers[1] = 3/2.0;
-		
 
-		
+
+
 		int asymetricFirms = 0;
-		
-		
-		//beta = 4e-6;
-		beta =  6e-5; //Used
-		
+
+
+
+		beta =  6e-5; // default value; if beta chould be varied, use the next line! Oay attention to the scaling (scaling factor of 1e4)
 		//beta = beta / 10000;
-		
-		//Hard coded experimetal setups
+
+		//Predefined experimetal setups
 		if(simulationExperimentSetup==1) {
-			
+
+			// Deep Q Network with large memory buffer
 			switchDeepQLearning = 1;
 			asymetricFirms = 0;
-			//effort = 0.2;
-			//lowerLimitStrat=1.3;
-			//grainStrat = 1.3;
-			//numStrat=23;
-			
 			freqUpdateTargetnet = 10000;
 			memorySize = 100000;
-			
-			
-			
-			
-			
-		
-			
+
 		}else if(simulationExperimentSetup==2) {
-			
+
+			// Deep Q Network with medium memory buffer
 			switchDeepQLearning = 1;
 			asymetricFirms=0;
-			//effort = 0.2;
-			//lowerLimitStrat=1.3;
-			//grainStrat = 1.3;
-			//numStrat=23;
-			
+
 			freqUpdateTargetnet = 100;
 			memorySize = 5000;
-			
-			
-			
-			
+
+
 		}else if(simulationExperimentSetup==3) {
-			
+
+			// Deep Q Network with no memory buffer
 			switchDeepQLearning = 0;
 			asymetricFirms=0;
-			//effort = 0.2;
-	
-			//lowerLimitStrat=1.3;
-			//grainStrat = 1.3;
-			//numStrat=23;
-			
-			
-	
-			
-		}else if(simulationExperimentSetup==4) {
-			
-			asymetricFirms=1;
 
-			switchDeepQLearning = 1;
-			//lowerLimitStrat=1.3;
-			//grainStrat = 1.3;
-			//numStrat=23;
-			
-			
-	
-			
-		}
-		
-		
+		}		
+
+
+
+		// Adjusting the grid in if number of firms is changed.
 		if(numFirms==3) {
-			
-			
+
 			lowerLimitStrat = 1.32; //lower limit of strategy space
-			grainStrat = 1.09 ; //how fine grained strategy space is;
-			
-			
-			
-			
+			grainStrat = 1.09 ; //how fine grained strategy space is;	
+
 		}else if(numFirms==4){
-			
+
 			lowerLimitStrat = 1.37; //lower limit of strategy space
 			grainStrat = 1.23 ; //how fine grained strategy space is;
-			
+
 		}else if(numFirms==5) {
-			
+
 			lowerLimitStrat = 0.78; //lower limit of strategy space
 			grainStrat = 1.32 ; //how fine grained strategy space is;
-			
+
 		}
-		
-		
-		
-		//If switchDeepQLearning!=1 set DQN parameters to run ordinary q learning
+
+
+
+		//If switchDeepQLearning!=1 set DQN parameters to run simulations without experience replay
 		if(!(switchDeepQLearning==1)) {
-			
+
 			freqTrainingNetwork = 1;
 			miniBatchSize = 1;
 			memorySize = 1;
 			freqUpdateTargetnet = 1;
 		}
-		
-		
-		
-		
+
+
+
+
 
 		String currentPathDB = "./output";
-				
+
 		//defines number for firms -- however done in parameter panel now
 		//numFirms = 2;
-		
+
 		// Initialize db recorder
-		
+
 
 		String fileSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
 		fileSuffix = "_"+fileSuffix;
-		
-		
+
+
 		DatabaseRecorder databaseRecorder = new DatabaseRecorder(currentPathDB, fileSuffix);
-		
+
 		databaseRecorder.createNeuralNetworkTable();
 		databaseRecorder.createParameterTable();
 		context.add(databaseRecorder);
-		
+
 		databaseRecorder.insertParameters(this);
-		
+
 		databaseRecorder.createFirmsTable();
 		databaseRecorder.createStatTable();
 		databaseRecorder.commit();
-		
-		
-		
-		
+
+
+
+
 		for(int i = 0; i < numStrat; i++) {
-			
+
 			if(Precision.round(lowerLimitStrat + i*grainStrat,2) > firmProductivity) {
-				
+
 				numStrat = i-1;
 				break;
 			}
-			
-			
+
+
 		}
-		
-		
+
+
 
 		// Set wage list with all possible wages
 		wageList= new double[numStrat];  
-		
+
 		for(int i = 0; i < numStrat; i++) {
-			
+
 			wageList[i] = Precision.round(lowerLimitStrat + i*grainStrat,2);
-			
+
 		}
-			
-		
-				
+
+
+
 		//initializes firms
-		
+
 		int positionFirm = 0; 
 		for (int i = 0; i < numFirms; i++) {
 			int firmID = i;
 			int numFilledJobs = 0;
 			int rowNumber=0;
-			
+
 			double productivity = firmProductivity;
-			
+
 			int freqTrainingNetworkFirm = freqTrainingNetwork;
 			int miniBatchSizeFirm = miniBatchSize;
 			int memorySizeFirm = memorySize;
 			int freqUpdateTargetnetFirm = freqUpdateTargetnet;
-			
+
 			if(asymetricFirms==1) {
-				
+
 				if(i%2 ==0) {
-					
+
 					freqTrainingNetworkFirm = 1;
 					miniBatchSizeFirm = 1;
 					memorySizeFirm = 1;
 					freqUpdateTargetnetFirm = 1;
-					
-				}
-				
-				
-			}
-			
-			
-			
-			if(asymetricProductivities==1) {
-				
-				if(i%2 ==0) {
-					
-					productivity= firmProductivity*(1-deltaProductivity);
-					
-				}else if(i%1 ==0) {
-					
-					productivity= firmProductivity*(1+deltaProductivity);
-					
-				}
-				
-			
-				
-				
-			}
-		
 
-	
-				context.add(new Firms(space, grid, firmID, numFilledJobs, positionFirm, lowerLimitStrat + (numStrat-1) * grainStrat, 
-						lowerLimitStrat + (numStrat-1) * grainStrat, lowerLimitStrat + (numStrat-1) * grainStrat, 
+				}
+
+
+			}
+
+
+
+			if(asymetricProductivities==1) {
+
+				if(i%2 ==0) {
+
+					productivity= firmProductivity*(1-deltaProductivity);
+
+				}else if(i%1 ==0) {
+
+					productivity= firmProductivity*(1+deltaProductivity);
+
+				}
+			}
+
+			context.add(new Firms(space, grid, firmID, numFilledJobs, positionFirm, lowerLimitStrat + (numStrat-1) * grainStrat, 
+					lowerLimitStrat + (numStrat-1) * grainStrat, lowerLimitStrat + (numStrat-1) * grainStrat, 
 					productivity, alpha, 0,	epsilonInit, beta, 
 					freqTrainingNetworkFirm,miniBatchSizeFirm,memorySizeFirm, freqUpdateTargetnetFirm,
 					delta,learningRate,
 					1, fee, shareFee, numFirms, modelType, wageList, randomProductivity,numIterationsBatchRuns,learningStart,weightRMSprop,databaseMode,factorNumNodesHiddenLayers, numHiddenLayers, optimizer, activationFunction, inputNormalization,rewardNormalization,deltaProductivity));
-			
+
 			positionFirm += numPositions / numFirms ; //firms are placed on opposite sites of circle
+
 		} 
-		
-	
-		//defines number of workers -- however done in parameter panel now
-		//numWorkers = 100;
-		
+
+
+
 		//initializes workers
 		for (int i = 0; i < numWorkers; i++) {
 			int workerID = i;
@@ -374,8 +330,8 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 			NdPoint pt = space.getLocation(obj);
 			grid.moveTo(obj, (int) pt.getX(), (int) pt.getY());
 		}
-		
-		
+
+
 		//moves firms and workers to their place on the Salop cicle
 		for (Object obj : context) {
 			if(obj instanceof Workers) {
@@ -387,9 +343,9 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 				grid.moveTo(aFirm, aFirm.position, 0);
 			}
 		}
-		
 
-				
+
+
 		//adds statistical office, sets initial values to zero
 		double numEmployed = 0;
 		double aggProfits = 0;
@@ -426,23 +382,23 @@ public class onlineLaborBuilder implements ContextBuilder<Object> {
 				greedyWageFirm0, greedyWageFirm1, greedyWageFirm2, greedyWageFirm3, 
 				meanSquaredErrorFirm0,meanSquaredErrorFirm1,meanSquaredErrorFirm2,meanSquaredErrorFirm3,
 				empFirm0, empFirm1, empFirm2, empFirm3, empID, greedyWageID, wageID, profitID,meanSquaredErrorID,  numIterationsBatchRuns,databaseMode));
-			
-		
-		
+
+
+
 		//System.out.println("Test");
-		
-		
+
+
 		//necessary to end batch runs, does XXX iterations (or XXX ticks)
 		//to generate multiple runs for a particular parameter constellation
 		//define as many random sees as you want runs
 		if (RunEnvironment.getInstance().isBatch()) {
 			RunEnvironment.getInstance().endAt(numIterationsBatchRuns);
-			
+
 		}	
 
 		return context;
 	}
 }
-	
+
 
 

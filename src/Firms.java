@@ -31,32 +31,32 @@ import org.apache.commons.math3.util.Precision;
 //This defines the firm as an agent
 
 public class Firms {
-	
+
 	//defines the space in which firms are placed; "space" is continuous; 
 	//"grid" defines a grid
 	private ContinuousSpace<Object> space;
 	private Grid<Object> grid;
-	
+
 	int sumAgents; 
 	double countAgents;
-	
+
 
 	//ArrayList to put the workers in who work for this firm
 	List<Workers> employmentList = new ArrayList<Workers>();
-	
+
 	//ArrayList to put the workers in who applied at this firm
 	List<Workers> applicationList = new ArrayList<Workers>();
-	
+
 	NeuralNetwork mainNetwork;   // Main network used to determine optimal choices
 	NeuralNetwork targetNetwork; // target network used to train the parameters of the main network
-	
+
 	ArrayList<Experience> memory; // Experience memory used for experience replay
 	ArrayList<Experience> miniBatch; // Holds a random sample of past experiences for experience replay
-	
+
 	double[] currentState; // holds current state -> wages of firms at the beginning of the iteration 
 	double[] nextState;  // holds next state ->  wages of firms after adjusting wages
 	double[] wageList; // holds all possible wages firms can choose from
-		
+
 	int firmID; //holds firm ID
 	int filledJobs; //number of filled jobs
 	int position; // fixed position of firm on the circle
@@ -71,12 +71,13 @@ public class Firms {
 	int tick; //counts the ticks
 	double fee; //platform fee
 	double shareFee; // share of fee that firm has to pay
-	double discontedReward;
-	double sumReward;
+	double discontedReward; // summing up the discounted rewards
+	double sumReward; // summing up the rewards
 	int numFirms; //number of firms in the market
 	int modelType; //zero for take it or leave it, and one for bidding model
 	int randomProductivity; //If set to 1: firm productivity is random draw
-	int numIterationsBatchRuns;
+	int numIterationsBatchRuns; // length of batch
+
 	//Parameters Deep Q learning
 	int freqTrainingNetwork; // Training frequency
 	int miniBatchSize; //Size of mini batch drawn from experience memory
@@ -89,22 +90,32 @@ public class Firms {
 	double meanSquaredError = 0;  // Av Mean squared error of current mini batch
 	double sumRMSE;
 	double deltaProductivity;
-	String optimizer;
-	String activationFunction;
-	int inputNormalization,rewardNormalization;
-	
-	
+	String optimizer; // Type of optimizer; use Adam or SGD
+	String activationFunction; // type of activation function; use logistic or ReLu
+	int inputNormalization; // normalize inputs in the NN
+	int rewardNormalization; // scale down the rewards 
+
+	//several variables to compute specific statistics
+	double priceChangeOwn, priceChangeCompetitor;
+	double sumBestResponsAdjustment;
+	double absSumBestResponsAdjustment;
+	double avBestResponse, minBestResponse, maxBestResponse;
+	ArrayList<BestResponse> bestResponseList; 
+	ArrayList<Double> lastGreedyWages;
+	double avWageCompMemory;
+	double avGreedyWage;
+
 	int databaseMode;
-	double[] factorNumNodesHiddenLayers;
-	int numHiddenLayers;
-	
+	double[] factorNumNodesHiddenLayers; // array with factors by which the number of output nodes is multiplied to get the number of nodes of hidden layers
+	int numHiddenLayers; // number of hidden layers
+
 	//constructor for a firm
 	//defines the spaces / grids for the firms, and the parameters 
 	//characterizing the firm (firmID ...)
 	// We use different constructors depending on the type of q matrix
-	
-	
-	
+
+
+
 	public Firms(ContinuousSpace<Object> space, Grid<Object> grid, int firmID, int filledJobs, 
 			int position, double wageOffer, double laggedOffer, double greedyWage, 
 			double firmProductivity, double alpha, double profits, 
@@ -152,124 +163,178 @@ public class Firms {
 		this.activationFunction = activationFunction;
 		this.rewardNormalization=rewardNormalization;
 		this.deltaProductivity = deltaProductivity;
-		
-		
+
+
 		this.inputNormalization=inputNormalization;
 		memory = new ArrayList<Experience>();
 		miniBatch = new ArrayList<Experience>();
-		 
+
+		lastGreedyWages = new ArrayList<Double>();
+
+
+
+		avWageCompMemory = 0;
+		avGreedyWage = 0;
+
+
+
+
+
 		// Distinguish two model types: mode 0 -> take it or leave it model; firms use wages of all firms to determine the best choice
 		//								mode 1 -> bidding model; firms only consider own wage in wage updating 
-		 
-		 if(modelType==0) {
-		
-			 // Take it or leave it
-			 
-			 mainNetwork = new NeuralNetwork(0, wageList, numFirms, wageList.length,numHiddenLayers, learningRate,weightRMSprop, factorNumNodesHiddenLayers,miniBatchSize, optimizer, activationFunction, inputNormalization);
-			 mainNetwork.setupNetwork();
-			
-			 // Create a deep copy of main network
-			 targetNetwork = mainNetwork.clone();
-			 targetNetwork.networkID=1;
-			
-			 // Determine the initial current state
-			 currentState = new double[numFirms] ;
-			 nextState = new double[numFirms] ;
-			
-		
-			
+
+		if(modelType==0) {
+
+			// Take it or leave it
+
+			mainNetwork = new NeuralNetwork(0, wageList, numFirms, wageList.length,numHiddenLayers, learningRate,weightRMSprop, factorNumNodesHiddenLayers,miniBatchSize, optimizer, activationFunction, inputNormalization);
+			mainNetwork.setupNetwork();
+
+			// Create a deep copy of main network
+			targetNetwork = mainNetwork.clone();
+			targetNetwork.networkID=1;
+
+			// Determine the initial current state
+			currentState = new double[numFirms] ;
+			nextState = new double[numFirms] ;
+
+
+
 			for(int i=0; i < numFirms; i++) {
-					
+
 				currentState[i] = 0.0;
 				nextState[i] = 0.0;
 			}
-		
+
+
+
+
+			bestResponseList = new ArrayList<BestResponse>();
+
+			for(int i=0; i<wageList.length;i++) {
+
+				for(int j=0; j<wageList.length;j++) {
+
+					double[] tempState = new double[numFirms] ;
+
+					tempState[0] = wageList[i];
+					tempState[1] =  wageList[j];
+
+					bestResponseList.add(new BestResponse(tempState));
+
+
+				}
+
+
+			}
+
+
+
+
+
 		}else {
-			
+
 			// Bidding
-			
+
 			mainNetwork = new NeuralNetwork(0, wageList, 1, wageList.length,numHiddenLayers,learningRate,weightRMSprop, factorNumNodesHiddenLayers,miniBatchSize, optimizer, activationFunction,inputNormalization);
 			mainNetwork.setupNetwork();
-			
+
 			targetNetwork = mainNetwork.clone();
 			targetNetwork.networkID=1;
-		
+
 			currentState = new double[1] ;
 			nextState = new double[1] ;
-			
+
 			currentState[0] = 0.0;
 			nextState[0] = 0.0;
-			
+
+
+
+			bestResponseList = new ArrayList<BestResponse>();
+
+			for(int i=0; i<wageList.length;i++) {
+
+
+
+				double[] tempState = new double[numFirms] ;
+
+				tempState[0] = wageList[i];
+
+
+				bestResponseList.add(new BestResponse(tempState));
+
+			}
 		}
 	}
-	
+
 
 	//scheduler start at tick=1, with interval = 1 the step() method is called for at ticks 1, 2, ...
 	//priority determines when within a tick this method is called (higher numbers go first)
 	//when the method is called it is executed on all firms that populate the model
-	
-	
-//firms fire workers 
-@ScheduledMethod (start = 1, interval = 1, priority = 110) 
-	 public void firing(){
-	
-	 	 //System.out.println(this.firmID + " now firing");
-	 	 
-	 	 for(int i = 0; i < this.employmentList.size(); i++) {
-	 		Workers aWorker = this.employmentList.get(i);
+
+
+	//firms fire workers 
+	@ScheduledMethod (start = 1, interval = 1, priority = 110) 
+	public void firing(){
+
+		//System.out.println(this.firmID + " now firing");
+
+		for(int i = 0; i < this.employmentList.size(); i++) {
+			Workers aWorker = this.employmentList.get(i);
 			aWorker.employmentStatus = 0;
 			aWorker.whereWork = -1;
 			aWorker.payOff = 0;
-	 	 }
-	 
-		 
+		}
+
+
 		//clears application  and employment list from previous round
-		 this.applicationList.clear(); 
-		 this.employmentList.clear();
-		 this.filledJobs = 0;
-		
-	  }
+		this.applicationList.clear(); 
+		this.employmentList.clear();
+		this.filledJobs = 0;
+
+	}
 
 
-//firms fire workers 
-@ScheduledMethod (start = 1, interval = 1, priority = 105) 
-	 public void setProductivity(){
-	
-	 	 if(this.randomProductivity==1) {
-	 		 
-	 		double randomDouble = RandomHelper.nextDoubleFromTo((-1)*deltaProductivity,deltaProductivity);
-	 		 
-	 		this.firmProductivity = firmBaseProductivity*(1 + randomDouble);
-	 		 
-	 	 }
-		
-	  }
+	//in the scenario with random productivities: instantanious productivity is a random number
+	@ScheduledMethod (start = 1, interval = 1, priority = 105) 
+	public void setProductivity(){
+
+
+		if(this.randomProductivity==1) {
+
+			double randomDouble = RandomHelper.nextDoubleFromTo((-1)*deltaProductivity,deltaProductivity);
+
+			this.firmProductivity = firmBaseProductivity*(1 + randomDouble);
+
+		}
+
+	}
 
 
 
 
-//determines wage offer using greedy algorithm
-@ScheduledMethod (start = 1, interval = 1, priority = 95)
+	//Sets the current state (depending on the scenario)
+	@ScheduledMethod (start = 1, interval = 1, priority = 95)
 	public void setCurrentState() {
-	
-	
+
+
 		Context  context = ContextUtils.getContext(this);
-	
+
 		// Set current state depending on the model type
 		if(modelType==0) {
 			Iterable<Firms> allFirms = context.getObjects(Firms.class);
 			for(Firms obj : allFirms) {
 				Firms aFirm = obj;
-					currentState[aFirm.firmID] = aFirm.wageOffer;
-				
+				currentState[aFirm.firmID] = aFirm.wageOffer;
+
 			}
 		}else {
-			
+
 			currentState[0] = this.wageOffer;
-			
+
 		}
-		
-		
+
+
 	}			
 
 
@@ -279,35 +344,40 @@ public class Firms {
 
 
 
-//determines wage offer using greedy algorithm
-@ScheduledMethod (start = 1, interval = 1, priority = 90)
+	//determines wage offer using greedy algorithm
+	@ScheduledMethod (start = 1, interval = 1, priority = 90)
 	public void wageOffer() {
-	
-		
+
+
 		// Exploration vs exploitation
-		
+
 		double random = RandomHelper.nextDoubleFromTo(0, 1);
 		//System.out.println("random and epsilon: " + " " + random + " " + this.epsilon) ;
 		if(random < 1 - this.epsilon) {
-		
+
 			// Exploitation: determine greedy wage using feedforwarding of the main network
 			this.wageOffer = mainNetwork.feedforward(currentState).action; //assigns action to wage offer of firm	
 			this.greedyWage = this.wageOffer;
-		
+
+
+			lastGreedyWages.add(this.wageOffer);
+			if(lastGreedyWages.size()==101)
+				lastGreedyWages.remove(0);
+
 		}	
 		else {
 			// Exploration: determione wages on a random base
 			int randomInt = RandomHelper.nextIntFromTo(0,  wageList.length - 1);
 			this.wageOffer = wageList[randomInt]; 
-	
+
 		}
-		
+
 	}			
 
 
-//firms hiring workers	 
-@ScheduledMethod (start = 1, interval = 1, priority = 60) 
-	  public void hiring(){ 
+	//firms hiring workers	 
+	@ScheduledMethod (start = 1, interval = 1, priority = 60) 
+	public void hiring(){ 
 		if(modelType == 0) {
 			//System.out.println(this.firmID + " hiring workers");			
 			for(int i = 0; i < this.applicationList.size(); i++) {
@@ -317,28 +387,28 @@ public class Firms {
 				aWorker.employmentStatus = 1;			
 			}
 		}
-		
-		
+
+
 		this.filledJobs = this.employmentList.size();
-		
-	  }
+
+	}
 
 
 
-//firm calculates profits
-@ScheduledMethod (start = 1, interval = 1, priority = 50)	  
+	//firm calculates profits
+	@ScheduledMethod (start = 1, interval = 1, priority = 50)	  
 	public void profits() {
 
 		//System.out.println(this.firmID + " calculates profits");	
 
 		this.profits = this.firmProductivity * Math.pow(this.employmentList.size(), this.alpha) 
-		- (this.wageOffer + this.wageOffer * fee * shareFee)* this.employmentList.size();
-		
-		
+				- (this.wageOffer + this.wageOffer * fee * shareFee)* this.employmentList.size();
+
+		// In case the profits are scaled down
 		if(rewardNormalization==1) {
 			this.profits = this.profits /1000.0;
 		}
-		
+
 		this.discontedReward += Math.pow(this.delta,this.tick - this.learningStart)*this.profits;
 		this.sumReward += this.profits;
 
@@ -347,167 +417,255 @@ public class Firms {
 
 
 
-//firm updates its Q matrix
-@ScheduledMethod (start = 1, interval = 1, priority = 40)	  
+	//firm updates its Q matrix
+	@ScheduledMethod (start = 1, interval = 1, priority = 40)	  
 	public void updateQ() {
-	
-	
-	tick = (int) RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
-	
-	//Update epsilon
-	
-	this.epsilon = Math.exp( (-1) * this.beta * Math.max(0.0, this.tick-learningStart));
-	
-	//System.out.println(epsilon);
-	
-	//Update next state, depeding on the model type
-	Context  context = ContextUtils.getContext(this);
-	if(this.modelType==0) {
-		Iterable<Firms> allFirms = context.getObjects(Firms.class);
-		for(Firms obj : allFirms) {
-			Firms aFirm = obj;
-			
-			nextState[aFirm.firmID] = aFirm.wageOffer;
-		
-			
-		}
-	}else {
-		
-		nextState[0] = this.wageOffer;
-		
-	}
-	
-	// Add current experience to the experience memory. Experience is a vector consisting of current state, profit, action and next state
-		
-	if(memory.size()>=memorySize)
-		memory.remove(0);
-	memory.add(new Experience(currentState, this.profits,this.wageOffer,nextState));
-	
-	// Online training
-	if(tick > learningStart && tick % freqTrainingNetwork==0) {
-
-		// Draw mini batch
-		miniBatch.clear();
-		for(int i=0; i < this.miniBatchSize;i++ ) {
-			miniBatch.add(memory.get(RandomHelper.nextIntFromTo(0, memory.size()-1)));
-		}
-		
-		meanSquaredError = 0.0;
-		
-		
-		mainNetwork.setupBackPropagate();
-		
-		// Loop through the mini  batches and update the parameters of main using mean squared errors and gradient descent
-		for(int i=0; i < miniBatch.size();i++) {
-			
-			// Uodate q values of main network based on drawn experience
-			mainNetwork.feedforward(miniBatch.get(i).currentState);
-			
-			// Determine the optimal action in the next state, based on the target network
-			ActionQValue nextAction =  targetNetwork.feedforward(miniBatch.get(i).nextState);
-			
-			// Determine the temporal difference y_j = pi + max_a Q^(s_t+1,a)
-			ActionQValue target = new ActionQValue();
-			target.action= miniBatch.get(i).action;
-			target.qValue= miniBatch.get(i).profit + delta*nextAction.qValue;
-			
-			// Run back propagation based on the temporal difference error y_j -Q(s_t,a)
-			mainNetwork.backPropagate(target, i);
-			//Update the network with adjusted weights
-			
-			
-			
-		}
-		
-		
-		mainNetwork.updateNetwork();
-		
-		
-		// Compute average MSE of the current mini batch
-		meanSquaredError =  mainNetwork.meanSquaredError /((double)miniBatch.size());
-		
-		
-		
-		sumRMSE += Math.sqrt(meanSquaredError);
-		
-	
-		
-		
-		
-	}
-		
-	//Clone the main network Q and set the target network equal the cloned main network
-	if(tick %  this.freqUpdateTargetnet==0) {
-		
-		//Deep copy of mainNetwork
-		targetNetwork = mainNetwork.clone();
-		
-		targetNetwork.networkID=1;
-	
-		
-	}
-	
-	
-	
-		
-	}
 
 
-	
-	
-	
-@ScheduledMethod (start = 1, interval = 1, priority = 10)	  
-public void writeFirmMemoryToDatabase() {
-	
-	if(databaseMode==0 || databaseMode==1 || databaseMode==2) {
-		if(this.tick>numIterationsBatchRuns-1000) {
-		
-				
+		tick = (int) RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+
+		//Update epsilon
+
+		this.epsilon = Math.exp( (-1) * this.beta * Math.max(0.0, this.tick-learningStart));
+
+		//System.out.println(epsilon);
+
+		//Update next state, depeding on the model type
+		Context  context = ContextUtils.getContext(this);
+		if(this.modelType==0) {
+			Iterable<Firms> allFirms = context.getObjects(Firms.class);
+			for(Firms obj : allFirms) {
+				Firms aFirm = obj;
+
+				nextState[aFirm.firmID] = aFirm.wageOffer;
+
+
+			}
+		}else {
+
+			nextState[0] = this.wageOffer;
+
+		}
+
+		// Add current experience to the experience memory. Experience is a vector consisting of current state, profit, action and next state
+
+		if(memory.size()>=memorySize)
+			memory.remove(0);
+
+
+		double[] curStat =  new double[currentState.length];
+		double[] nexStat =  new double[currentState.length];
+
+		for(int i = 0; i < currentState.length;i++) {
+
+			curStat[i] = currentState[i];
+			nexStat[i] = nextState[i];
+
+		}
+
+		memory.add(new Experience(curStat, this.profits,this.wageOffer,nexStat));
+
+		// Online training
+		if(tick > learningStart && tick % freqTrainingNetwork==0) {
+
+			// Draw mini batch
+			miniBatch.clear();
+			for(int i=0; i < this.miniBatchSize;i++ ) {
+				miniBatch.add(memory.get(RandomHelper.nextIntFromTo(0, memory.size()-1)));
+			}
+
+			meanSquaredError = 0.0;
+
+
+			mainNetwork.setupBackPropagate();
+
+			// Loop through the mini  batch and update the parameters of the neural network
+			for(int i=0; i < miniBatch.size();i++) {
+
+				// Uodate q values of main network based on drawn experience
+				mainNetwork.feedforward(miniBatch.get(i).currentState);
+
+				// Determine the optimal action in the next state, based on the target network
+				ActionQValue nextAction =  targetNetwork.feedforward(miniBatch.get(i).nextState);
+
+				// Determine the temporal difference y_j = pi + max_a Q^(s_t+1,a)
+				ActionQValue target = new ActionQValue();
+				target.action= miniBatch.get(i).action;
+				target.qValue= miniBatch.get(i).profit + delta*nextAction.qValue;
+
+				// Run back propagation based on the temporal difference error y_j -Q(s_t,a)
+				mainNetwork.backPropagate(target, i);
+				//Update the network with adjusted weights
+
+
+
+			}
+
+			mainNetwork.updateNetwork();
+
+			// Compute average MSE of the current mini batch
+			meanSquaredError =  mainNetwork.meanSquaredError /((double)miniBatch.size());
+			sumRMSE += Math.sqrt(meanSquaredError);
+
+
+
+
+
+		}
+
+		//Clone the main network Q and set the target network equal the cloned main network
+		if(tick %  this.freqUpdateTargetnet==0) {
+
+			//Deep copy of mainNetwork
+			targetNetwork = mainNetwork.clone();
+
+			targetNetwork.networkID=1;
+
+
+		}
+
+
+
+
+	}
+
+
+	// compute some statistics
+	@ScheduledMethod (start = 1, interval = 1, priority = 40)	  
+	public void computeStatistics() {
+
+		if( tick > learningStart && this.tick %100==0 ) {
+
+			avWageCompMemory = 0;
+
+			for(int i=0; i < this.memory.size();i++) {
+
+				if(firmID==0)
+					avWageCompMemory += memory.get(i).currentState[1];
+				else
+					avWageCompMemory += memory.get(i).currentState[0];
+			}
+
+			avWageCompMemory = avWageCompMemory/ memory.size();
+
+
+			avGreedyWage = 0;
+
+			for(int i=0; i < lastGreedyWages.size();i++) {
+
+				avGreedyWage += lastGreedyWages.get(i);
+
+			}
+
+			if(lastGreedyWages.size()>0)
+				avGreedyWage = avGreedyWage / lastGreedyWages.size();
+
+
+
+
+		}
+
+
+		//Computationally heavy: therefore switched off by default
+		boolean computeStatistics = false;
+
+		if(computeStatistics) {
+			if(modelType==0 &&(((this.tick >50000 && this.tick <55000)||(this.tick >100000 && this.tick <105000)||(this.tick >150000 && this.tick <155000)||(this.tick >200000 && this.tick <205000))|| this.tick %100==0 )) {
+				sumBestResponsAdjustment = 0.0;
+				absSumBestResponsAdjustment = 0.0;
+				avBestResponse = 0.0;
+				minBestResponse = 999;
+				maxBestResponse = 0.0;
+
+				for(int i=0; i < bestResponseList.size();i++) {
+
+					double oldResponse = bestResponseList.get(i).bestResponse;
+
+					bestResponseList.get(i).bestResponse = mainNetwork.feedforward(bestResponseList.get(i).currentState).action;
+
+					sumBestResponsAdjustment += (bestResponseList.get(i).bestResponse - oldResponse);
+					absSumBestResponsAdjustment += Math.abs(bestResponseList.get(i).bestResponse - oldResponse);
+					avBestResponse += bestResponseList.get(i).bestResponse;
+
+					if(bestResponseList.get(i).bestResponse < minBestResponse) {
+
+						minBestResponse = bestResponseList.get(i).bestResponse;
+
+					}
+
+					if(bestResponseList.get(i).bestResponse > maxBestResponse) {
+
+						maxBestResponse = bestResponseList.get(i).bestResponse;
+
+					}
+
+
+				}
+
+				avBestResponse = avBestResponse / (1.0*bestResponseList.size());
+
+			}
+		}
+
+	}
+
+	// Procedure for writing specifc data to SQLite data base
+	@ScheduledMethod (start = 1, interval = 1, priority = 10)	  
+	public void writeFirmMemoryToDatabase() {
+
+
+		// All firm memory
+		if(databaseMode==0 || databaseMode==1 ) {
+			if(this.tick>numIterationsBatchRuns-1000  || modelType==0 &&(this.tick %100==0  ||  (this.tick >50000 && this.tick <55000)||(this.tick >100000 && this.tick <105000)||(this.tick >150000 && this.tick <155000)||(this.tick >200000 && this.tick <205000) )) {
+				//if(this.tick>numIterationsBatchRuns-1000  ) {
+
 				Context  context = ContextUtils.getContext(this);
 				Iterable<DatabaseRecorder> allDatabaseRecorder = context.getObjects(DatabaseRecorder.class);
-		
+
 				for(DatabaseRecorder obj : allDatabaseRecorder) {
-					
+
 					DatabaseRecorder aDatabaseRecorder = obj;
-					
-				
+
+
 					aDatabaseRecorder.insertFirm(this.tick, this);		
-					
+
 					aDatabaseRecorder.commit();
 				}
-		
-		}
-		
-	}
-	
-	if(databaseMode==2) {
-		if(this.tick>this.learningStart) {
-		if((this.tick % 100000 == 0) ) {
-			//if((this.tick >=50000 && this.tick <= 60000) ) {
-			Context  context = ContextUtils.getContext(this);
-			Iterable<DatabaseRecorder> allDatabaseRecorder = context.getObjects(DatabaseRecorder.class);
-	
-			for(DatabaseRecorder obj : allDatabaseRecorder) {
-				
-				DatabaseRecorder aDatabaseRecorder = obj;
-				
-			
-				aDatabaseRecorder.insertNetworke(this.tick, this.firmID, this.mainNetwork);		
-				
-				
-				aDatabaseRecorder.insertFirm(this.tick, this);	
-				
-				aDatabaseRecorder.commit();
+
 			}
-			
+
 		}
 
-	}
-			
-}
-}		
-				
+		// All firm memroy plus the current network
+		if(databaseMode==2) {
+			if(this.tick>this.learningStart) {
+
+				if(this.tick %100==0 || (this.tick >=50000 && this.tick <= 55000) || (this.tick >=65000 && this.tick <= 70000) || (this.tick >=80000 && this.tick <= 85000) || (this.tick >=100000 && this.tick <= 105000) ) {
+					Context  context = ContextUtils.getContext(this);
+					Iterable<DatabaseRecorder> allDatabaseRecorder = context.getObjects(DatabaseRecorder.class);
+
+					for(DatabaseRecorder obj : allDatabaseRecorder) {
+
+						DatabaseRecorder aDatabaseRecorder = obj;
+
+
+						aDatabaseRecorder.insertNetworke(this.tick, this.firmID, this.mainNetwork);		
+
+
+						aDatabaseRecorder.insertFirm(this.tick, this);	
+
+						aDatabaseRecorder.commit();
+					}		
+
+
+
+				}	
+			}
+
+		}
+	}		
+
 }			
 
 
-	  
+

@@ -141,11 +141,8 @@ public class NetworkNode implements Cloneable{
 			System.exit(0);
 			return 0;
 			
-			
 		}
-		
-		
-		
+
 	}
 	
 	// Derivative of Activation function, identified by activationFunction String
@@ -176,12 +173,7 @@ double derivativeActivationFunction(double w) {
 			
 			
 		}
-		
-		
-		
+
 	}
 
-
-
-	
 }
